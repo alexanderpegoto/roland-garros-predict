@@ -7,8 +7,10 @@ Adjust these parameters to tune the system behavior
 # ELO SYSTEM PARAMETERS
 # =============================================================================
 
-# Base K-factor for rating changes
-BASE_K_FACTOR = 32
+# Dynamic K-factor parameters
+K_BASE = 250
+K_OFFSET = 5
+K_SHAPE = 0.4
 
 # Tournament importance multipliers
 TOURNAMENT_WEIGHTS = {
@@ -39,30 +41,22 @@ MOV_MULTIPLIERS = {
 # =============================================================================
 
 # Starting rating for new players
-STARTING_RATING = 1300
+STARTING_RATING = 1500
 
 # Valid surfaces
-VALID_SURFACES = ['Hard', 'Clay', 'Grass', 'Carpet']
-
-# Surface weights for overall rankings
-SURFACE_WEIGHTS = {
-    'Hard': 0.5,    # Most common surface
-    'Clay': 0.3,    # Second most common
-    'Grass': 0.1,   # Limited season
-    'Carpet': 0.1   # Rare nowadays
-}
+VALID_SURFACES = ['Hard', 'Clay', 'Grass']
 
 # =============================================================================
 # RATING DECAY PARAMETERS
 # =============================================================================
 
 # Decay rates for inactive players
-DECAY_RATE = 0.92           # Normal decay rate
-STRONG_DECAY_RATE = 0.85    # For players inactive 2+ years
+DECAY_RATE = 0.85           # Normal decay rate
+STRONG_DECAY_RATE = 0.7 
 
 # Inactivity thresholds (in days)
-DECAY_THRESHOLD = 365       # Start decay after 1 year
-STRONG_DECAY_THRESHOLD = 730  # Strong decay after 2 years
+DECAY_THRESHOLD = 90      # Start decay n days
+STRONG_DECAY_THRESHOLD = 365  # Strong decay after n days
 
 # How often to apply decay during processing (every N matches)
 DECAY_FREQUENCY = 1000

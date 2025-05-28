@@ -6,59 +6,64 @@ def initialize_player(player_id, player_name):
     """Initialize a new player with starting ratings and metadata"""
     return {
         'name': player_name,
-        'ratings': {
-            'Hard': 1300,
-            'Clay': 1300,
-            'Grass': 1300,
-            'Carpet': 1300
-        },
+        'ratings': {surface: STARTING_RATING for surface in VALID_SURFACES},
+        'matches_played': {surface: 0 for surface in VALID_SURFACES},
+        'total_matches': 0,
         'last_match_date': None,
-        'total_matches': 0
+        'peak_rating': {surface: STARTING_RATING for surface in VALID_SURFACES},
+        'peak_rating_date': {surface: None for surface in VALID_SURFACES}
     }
     
-def update_player_match_info(player_data, match_date):
-    """Update player's last match date and total matches count"""
-    player_data['last_match_date'] = match_date
+def update_player_after_match(player_data, surface, new_rating, match_date):
+    """Update player data after a match"""
+    # Update rating
+    player_data['ratings'][surface] = new_rating
+    
+    # Update match counts
+    player_data['matches_played'][surface] += 1
     player_data['total_matches'] += 1
     
-def apply_rating_decay(players_dict, current_date=None, decay_rate=0.92, strong_decay_rate=0.85):
-    """Apply exponential decay to players innactivity penalizing not playing vs active players"""
+    # Update last match date
+    current_last_date = player_data.get('last_match_date')
+    if current_last_date is None or match_date > current_last_date:
+        player_data['last_match_date'] = match_date
+    
+    # Check for new peak rating
+    if new_rating > player_data['peak_rating'][surface]:
+        player_data['peak_rating'][surface] = new_rating
+        player_data['peak_rating_date'][surface] = match_date
+    
+def apply_rating_decay(players_dict, current_date=None, starting_rating=1500):
+    """
+    Applies decay to player Elo ratings based on inactivity.
+    Uses DECAY_RATE and STRONG_DECAY_RATE depending on time since last match.
+    """
+
     if current_date is None:
         current_date = datetime.now()
-        
-    for player_id, player_data in players_dict.items():
-        if player_data['last_match_date'] is not None:
-            days_inactive = (current_date - player_data['last_match_date']).days
-            
-            if days_inactive > 365:  # 1 year threshold
-                if days_inactive > 730:  # 2+ years = strong decay
-                    decay_factor = strong_decay_rate ** (days_inactive / 365)
-                else:
-                    decay_factor = decay_rate ** (days_inactive / 365)
-                    
-                for surface in player_data['ratings']:
-                    current_rating = player_data['ratings'][surface]
-                    player_data['ratings'][surface] = 1300 + (current_rating - 1300) * decay_factor
-                    
-def add_or_update_player(players_dict, player_id, player_name, match_date):
-    """Add new player or update existing player info"""
-    if player_id not in players_dict:
-        players_dict[player_id] = initialize_player(player_id, player_name)
-    else:
-        # Update name in case it was "Unknown" before
-        players_dict[player_id]['name'] = player_name
-    
-    update_player_match_info(players_dict[player_id], match_date)
-    
-def get_player_rating(players_dict, player_id, surface):
-    """Get a player's current rating for a specific surface"""
-    if player_id in players_dict:
-        return players_dict[player_id]['ratings'].get(surface, STARTING_RATING)
-    return STARTING_RATING
-    
 
-def update_player_rating(player_data, surface, rating_change):
-    """Update a player's rating for a specific surface"""
-    player_data['ratings'][surface] += rating_change
-    
-    
+    for player_id, player_data in players_dict.items():
+        last_date = player_data.get('last_match_date')
+        if last_date is None:
+            continue
+
+        days_inactive = (current_date - last_date).days
+
+        # Decide decay strength
+        if days_inactive > STRONG_DECAY_THRESHOLD:
+            decay_rate = STRONG_DECAY_RATE
+        elif days_inactive > DECAY_THRESHOLD:
+            decay_rate = DECAY_RATE
+        else:
+            continue  # No decay applied
+
+        # Apply exponential decay based on time
+        decay_factor = decay_rate ** (days_inactive / 365)
+
+        # Update all ratings (surface-specific)
+        for surface in player_data['ratings']:
+            old_rating = player_data['ratings'][surface]
+            new_rating = starting_rating + (old_rating - starting_rating) * decay_factor
+            player_data['ratings'][surface] = new_rating
+            
+        
